@@ -1,0 +1,67 @@
+FROM {{ namespace }}/{{ image_prefix }}nova-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        openstack-nova-compute \
+        openvswitch \
+        sysfsutils \
+        ceph-common \
+        genisoimage \
+    && yum clean all
+
+    {% elif base_distro in ['ubuntu'] %}
+
+# ironic as workaround https://bugs.launchpad.net/packstack/+bug/1430388
+RUN apt-get install -y --no-install-recommends \
+        nova-compute \
+        openvswitch-switch \
+        sysfsutils \
+        ceph-common \
+        ironic-common \
+        python-ironicclient \
+        genisoimage \
+    && apt-get clean \
+    && rm -f /etc/nova/nova-compute.conf
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        libvirt-devel \
+        openvswitch \
+        qemu-img \
+        sysfsutils \
+        ceph-common \
+        genisoimage \
+    && yum clean all
+
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        libvirt-dev \
+        qemu-utils \
+        ceph-common \
+        genisoimage \
+    && apt-get clean \
+    && mkdir -p /etc/ceph
+
+    {% endif %}
+
+RUN /var/lib/kolla/venv/bin/pip --no-cache-dir install --upgrade -c requirements/upper-constraints.txt libvirt-python
+
+{% endif %}
+
+COPY nova_compute_sudoers /etc/sudoers.d/nova_compute_sudoers
+COPY extend_start.sh /usr/local/bin/kolla_nova_extend_start
+RUN chmod 755 /usr/local/bin/kolla_nova_extend_start \
+    && chmod 750 /etc/sudoers.d \
+    && chmod 440 /etc/sudoers.d/nova_compute_sudoers \
+    && rm -f /etc/machine-id
+
+{{ include_footer }}
+
+USER nova

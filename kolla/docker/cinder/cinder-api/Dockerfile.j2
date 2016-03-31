@@ -1,0 +1,24 @@
+FROM {{ namespace }}/{{ image_prefix }}cinder-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum install -y python-keystone \
+  && yum clean all
+
+    {% elif base_distro in ['ubuntu'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        cinder-api \
+    && apt-get clean
+
+    {% endif %}
+{% endif %}
+
+COPY extend_start.sh /usr/local/bin/kolla_cinder_extend_start
+RUN chmod 755 /usr/local/bin/kolla_cinder_extend_start
+
+{{ include_footer }}
+
+USER cinder

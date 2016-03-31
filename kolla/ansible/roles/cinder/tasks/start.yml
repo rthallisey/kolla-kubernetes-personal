@@ -1,0 +1,49 @@
+---
+- name: Starting cinder-api container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    name: "cinder_api"
+    image: "{{ cinder_api_image_full }}"
+    volumes:
+      - "{{ node_config_directory }}/cinder-api/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['cinder-api']
+
+- name: Starting cinder-scheduler container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    name: "cinder_scheduler"
+    image: "{{ cinder_scheduler_image_full }}"
+    volumes:
+      - "{{ node_config_directory }}/cinder-scheduler/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['cinder-scheduler']
+
+- name: Starting cinder-volume container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    name: "cinder_volume"
+    image: "{{ cinder_volume_image_full }}"
+    privileged: True
+    volumes:
+      - "{{ node_config_directory }}/cinder-volume/:{{ container_config_directory }}/:ro"
+      - "/dev/:/dev/"
+      - "/run/:/run/"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['cinder-volume']
+
+- name: Starting cinder-backup container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    name: "cinder_backup"
+    image: "{{ cinder_backup_image_full }}"
+    privileged: True
+    volumes:
+      - "{{ node_config_directory }}/cinder-backup/:{{ container_config_directory }}/:ro"
+      - "/dev/mapper/:/dev/mapper/"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['cinder-backup']

@@ -1,0 +1,26 @@
+FROM {{ namespace }}/{{ image_prefix }}heat-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+# TODO(SamYaple): until packaging is fixed, all of the python clients below are required
+# http://pkgs.fedoraproject.org/cgit/openstack-heat.git/tree/openstack-heat.spec#n248
+RUN yum -y install \
+        python-barbicanclient \
+        python-zaqarclient \
+        openstack-heat-engine \
+    && yum clean all
+
+   {% elif base_distro in ['ubuntu'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        heat-engine \
+    && apt-get clean
+
+    {% endif %}
+{% endif %}
+
+{{ include_footer }}
+
+USER heat

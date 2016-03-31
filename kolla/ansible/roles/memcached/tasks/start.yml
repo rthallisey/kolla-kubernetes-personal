@@ -1,0 +1,9 @@
+---
+- name: Starting memcached container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ memcached_image_full }}"
+    name: "memcached"
+    volumes: "{{ node_config_directory }}/memcached/:{{ container_config_directory }}/:ro"
+  when: inventory_hostname in groups['memcached']

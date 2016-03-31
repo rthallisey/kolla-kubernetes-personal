@@ -1,0 +1,11 @@
+{
+    "command": "ironic-conductor",
+    "config_files": [
+        {
+            "source": "{{ container_config_directory }}/ironic.conf",
+            "dest": "/etc/ironic/ironic.conf",
+            "owner": "ironic",
+            "perm": "0600"
+        }
+    ]
+}

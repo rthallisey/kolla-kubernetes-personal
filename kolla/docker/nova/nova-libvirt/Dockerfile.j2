@@ -1,0 +1,38 @@
+FROM {{ namespace }}/{{ image_prefix }}base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        libvirt-daemon \
+        libguestfs \
+        qemu-system-x86 \
+        libvirt-daemon-driver-nwfilter \
+        libvirt-daemon-config-nwfilter \
+        libvirt-daemon-driver-lxc \
+        ceph-common \
+    && yum clean all
+
+{% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        ceph-common \
+        libvirt-bin \
+        dmidecode \
+        pm-utils \
+        qemu \
+        qemu-block-extra \
+        ebtables \
+        xen-utils-4.6 \
+    && apt-get clean \
+    && mkdir -p /etc/ceph \
+    && rm /etc/libvirt/qemu/networks/default.xml /etc/libvirt/qemu/networks/autostart/default.xml \
+    && sed -i 's|.*stdio_handler.*|stdio_handler = "file"|' /etc/libvirt/qemu.conf
+
+{% endif %}
+
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+RUN chmod 755 /usr/local/bin/kolla_extend_start \
+    && useradd --user-group nova
+
+{{ include_footer }}

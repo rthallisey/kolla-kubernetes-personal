@@ -1,0 +1,31 @@
+---
+- name: Ensuring config directories exist
+  file:
+    path: "{{ node_config_directory }}/{{ item.service }}"
+    state: "directory"
+    recurse: yes
+  when: inventory_hostname in groups[item.group]
+  with_items: "{{ glance_service_groups }}"
+
+- name: Copying over config.json files for services
+  template:
+    src: "{{ item.service }}.json.j2"
+    dest: "{{ node_config_directory }}/{{ item.service }}/config.json"
+  when: inventory_hostname in groups[item.group]
+  with_items: "{{ glance_service_groups }}"
+
+- name: Copying over glance-*.conf
+  merge_configs:
+    vars:
+      service_name: "{{ item.service }}"
+    sources:
+      - "{{ role_path }}/templates/{{ item.service }}.conf.j2"
+      - "/etc/kolla/config/global.conf"
+      - "/etc/kolla/config/database.conf"
+      - "/etc/kolla/config/messaging.conf"
+      - "/etc/kolla/config/glance.conf"
+      - "/etc/kolla/config/glance/{{ item.service }}.conf"
+      - "/etc/kolla/config/glance/{{ inventory_hostname }}/{{ item.service }}.conf"
+    dest: "{{ node_config_directory }}/{{ item.service }}/{{ item.service }}.conf"
+  when: inventory_hostname in groups[item.group]
+  with_items: "{{ glance_service_groups }}"

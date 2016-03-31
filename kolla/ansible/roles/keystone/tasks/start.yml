@@ -1,0 +1,13 @@
+---
+- name: Starting keystone container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ keystone_image_full }}"
+    name: "keystone"
+    volumes:
+      - "{{ node_config_directory }}/keystone/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+
+- name: Wait for keystone startup
+  wait_for: host={{ kolla_internal_fqdn }} port={{ keystone_admin_port }}

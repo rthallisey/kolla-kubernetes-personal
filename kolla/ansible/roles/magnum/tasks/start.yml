@@ -1,0 +1,22 @@
+---
+- name: Starting magnum-api container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ magnum_api_image_full }}"
+    name: "magnum_api"
+    volumes:
+      - "{{ node_config_directory }}/magnum-api/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['magnum-api']
+
+- name: Starting magnum-conductor container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ magnum_conductor_image_full }}"
+    name: "magnum_conductor"
+    volumes:
+      - "{{ node_config_directory }}/magnum-conductor/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['magnum-conductor']

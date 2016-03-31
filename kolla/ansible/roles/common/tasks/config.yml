@@ -1,0 +1,71 @@
+---
+- name: Ensuring config directories exist
+  file:
+    path: "{{ node_config_directory }}/{{ item }}"
+    state: "directory"
+    recurse: yes
+  with_items:
+    - "heka"
+    - "cron"
+    - "cron/logrotate"
+
+- name: Copying over config.json files for services
+  template:
+    src: "{{ item }}.json.j2"
+    dest: "{{ node_config_directory }}/{{ item }}/config.json"
+  with_items:
+    - "heka"
+    - "cron"
+
+- name: Copying over heka config files
+  template:
+    src: "heka-{{ item.src|default(item.name) }}.toml.j2"
+    dest: "{{ node_config_directory }}/heka/heka-{{ item.name }}.toml"
+  when: item.enabled | bool
+  with_items:
+    - { name: "elasticsearch", enabled: "{{ enable_central_logging }}" }
+    - { name: "global", enabled: "yes" }
+    - { name: "haproxy", enabled: "{{ enable_haproxy }}" }
+    - { name: "horizon", enabled: "{{ enable_horizon }}" }
+    - { name: "keystone", enabled: "{{ enable_keystone }}" }
+    - { name: "mariadb", enabled: "{{ enable_mariadb }}" }
+    - { name: "openstack", enabled: "yes" }
+    - { name: "rabbitmq", enabled: "{{ enable_rabbitmq }}" }
+    - { name: "swift-account-auditor", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-account-reaper", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-account-replicator", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-account-server", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-container-auditor", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-container-replicator", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-container-server", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-container-updater", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-object-auditor", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-object-expirer", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-object-replicator", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-object-server", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-object-updater", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-proxy-server", src: "swift", enabled: "{{ enable_swift }}" }
+    - { name: "swift-rsyncd", src: "swift", enabled: "{{ enable_swift }}" }
+
+- name: Copying over cron logrotate config files
+  template:
+    src: "cron-logrotate-{{ item }}.conf.j2"
+    dest: "{{ node_config_directory }}/cron/logrotate/{{ item }}.conf"
+  with_items:
+    - "ansible"
+    - "cinder"
+    - "glance"
+    - "global"
+    - "haproxy"
+    - "heat"
+    - "keepalived"
+    - "keystone"
+    - "magnum"
+    - "manila"
+    - "mariadb"
+    - "mistral"
+    - "murano"
+    - "neutron"
+    - "nova"
+    - "rabbitmq"
+    - "swift"

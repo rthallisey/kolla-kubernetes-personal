@@ -1,0 +1,36 @@
+---
+- name: Check if all rabbit hostnames are resolvable
+  command: "getent ahostsv4 {{ hostvars[item]['ansible_hostname'] }}"
+  changed_when: false
+  register: rabbitmq_hostnames
+  with_items: groups['rabbitmq']
+
+- fail: msg="Hostname has to resolve to IP address of api_interface"
+  with_items: rabbitmq_hostnames.results
+  when: "{% set ip=item.stdout.split(' ')[0] %}'{{ hostvars[item['item']]['ansible_' + hostvars[item['item']]['api_interface']]['ipv4']['address'] }}' != '{{ ip }}'"
+
+- name: Creating rabbitmq volume
+  kolla_docker:
+    action: "create_volume"
+    common_options: "{{ docker_common_options }}"
+    name: "rabbitmq"
+  register: rabbitmq_volume
+
+- name: Running RabbitMQ bootstrap container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    detach: False
+    environment:
+      KOLLA_BOOTSTRAP:
+      KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
+      RABBITMQ_CLUSTER_COOKIE: "{{ rabbitmq_cluster_cookie }}"
+    image: "{{ rabbitmq_image_full }}"
+    labels:
+      BOOTSTRAP:
+    name: "rabbitmq_bootstrap"
+    restart_policy: "never"
+    volumes:
+      - "{{ node_config_directory }}/rabbitmq/:{{ container_config_directory }}/:ro"
+      - "rabbitmq:/var/lib/rabbitmq/"
+  when: rabbitmq_volume | changed
