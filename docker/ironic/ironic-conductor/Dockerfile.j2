@@ -1,0 +1,41 @@
+FROM {{ namespace }}/{{ image_prefix }}ironic-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        openstack-ironic-conductor \
+        qemu-img \
+    && yum clean all
+
+    {% elif base_distro in ['ubuntu'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        ironic-conductor \
+        qemu-utils \
+        ipmitool \
+    && apt-get clean
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        qemu-img \
+        ipmitool \
+    && yum clean all
+
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        qemu-utils \
+        ipmitool \
+    && apt-get clean
+
+    {% endif %}
+{% endif %}
+
+{{ include_footer }}
+
+USER ironic

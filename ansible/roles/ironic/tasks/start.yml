@@ -1,0 +1,41 @@
+---
+- name: Starting ironic-pxe container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    name: "ironic_pxe"
+    image: "{{ ironic_pxe_image_full }}"
+    volumes:
+      - "{{ node_config_directory }}/ironic-pxe/:{{ container_config_directory }}/:ro"
+      - "ironic_pxe:/tftpboot/"
+  when: inventory_hostname in groups['ironic-pxe']
+
+- name: Starting ironic-api container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ ironic_api_image_full }}"
+    name: "ironic_api"
+    volumes: "{{ node_config_directory }}/ironic-api/:{{ container_config_directory }}/:ro"
+  when: inventory_hostname in groups['ironic-api']
+
+- name: Starting ironic-conductor container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ ironic_conductor_image_full }}"
+    name: "ironic_conductor"
+    volumes:
+      - "{{ node_config_directory }}/ironic-conductor/:{{ container_config_directory }}/:ro"
+      - "ironic_pxe:/tftpboot/"
+  when: inventory_hostname in groups['ironic-conductor']
+
+- name: Starting ironic-inspector container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ ironic_inspector_image_full }}"
+    name: "ironic_inspector"
+    privileged: True
+    volumes: "{{ node_config_directory }}/ironic-inspector/:{{ container_config_directory }}/:ro"
+  when: inventory_hostname in groups['ironic-inspector']

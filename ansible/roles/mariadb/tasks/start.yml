@@ -1,0 +1,25 @@
+---
+- name: Starting mariadb container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ mariadb_image_full }}"
+    name: "mariadb"
+    volumes:
+      - "{{ node_config_directory }}/mariadb/:{{ container_config_directory }}/:ro"
+      - "mariadb:/var/lib/mysql"
+      - "kolla_logs:/var/log/kolla/"
+  when: delegate_host != 'None' or
+        ( groups['mariadb'] | length ) == 1 or
+        ( delegate_host == 'None' and inventory_hostname != groups['mariadb'][0] )
+
+- name: Waiting for MariaDB service to be ready
+  command: "docker exec mariadb ls /var/lib/mysql/mariadb.pid"
+  register: bootstrap_result
+  when: delegate_host != 'None' or
+        ( groups['mariadb'] | length ) == 1 or
+        ( delegate_host == 'None' and inventory_hostname != groups['mariadb'][0] )
+  until: bootstrap_result|success
+  changed_when: False
+  retries: 6
+  delay: 10

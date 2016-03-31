@@ -1,0 +1,22 @@
+---
+- name: Starting murano-engine container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ murano_engine_image_full }}"
+    name: "murano_engine"
+    volumes:
+      - "{{ node_config_directory }}/murano-engine/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['murano-engine']
+
+- name: Starting murano-api container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ murano_api_image_full }}"
+    name: "murano_api"
+    volumes:
+      - "{{ node_config_directory }}/murano-api/:{{ container_config_directory }}/:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['murano-api']

@@ -1,0 +1,28 @@
+FROM {{ namespace }}/{{ image_prefix }}nova-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        novnc \
+        openstack-nova-novncproxy \
+    && yum clean all
+
+    {% elif base_distro in ['ubuntu'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        nova-novncproxy \
+    && apt-get clean
+
+    {% endif %}
+{% elif install_type == 'source' %}
+
+ADD nova-novncproxy-archive /usr/share/nova-novncproxy-source
+RUN cd /usr/share && ln -s nova-novncproxy-source/* novnc
+
+{% endif %}
+
+{{ include_footer }}
+
+USER nova

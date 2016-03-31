@@ -1,0 +1,35 @@
+---
+- name: Ensuring config directories exist
+  file:
+    path: "{{ node_config_directory }}/{{ item }}"
+    state: "directory"
+    recurse: yes
+  with_items:
+    - "keystone"
+
+- name: Copying over config.json files for services
+  template:
+    src: "{{ item }}.json.j2"
+    dest: "{{ node_config_directory }}/{{ item }}/config.json"
+  with_items:
+    - "keystone"
+
+- name: Copying over keystone.conf
+  merge_configs:
+    vars:
+      service_name: "{{ item }}"
+    sources:
+      - "{{ role_path }}/templates/keystone.conf.j2"
+      - "/etc/kolla/config/global.conf"
+      - "/etc/kolla/config/database.conf"
+      - "/etc/kolla/config/messaging.conf"
+      - "/etc/kolla/config/keystone.conf"
+      - "/etc/kolla/config/keystone/{{ inventory_hostname }}/keystone.conf"
+    dest: "{{ node_config_directory }}/{{ item }}/keystone.conf"
+  with_items:
+    - "keystone"
+
+- name: Copying over wsgi-keystone.conf
+  template:
+    src: "wsgi-keystone.conf.j2"
+    dest: "{{ node_config_directory }}/keystone/wsgi-keystone.conf"

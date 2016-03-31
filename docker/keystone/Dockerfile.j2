@@ -1,0 +1,73 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['fedora', 'centos', 'oraclelinux', 'rhel'] %}
+
+# TODO(sdake)Revert this change before release of Mitaka
+RUN yum -y install https://copr-be.cloud.fedoraproject.org/results/sdake/Keystone/epel-7-x86_64/00167586-openstack-keystone/openstack-keystone-9.0.0-0.sdake.el7.centos.noarch.rpm \
+        https://copr-be.cloud.fedoraproject.org/results/sdake/Keystone/epel-7-x86_64/00167586-openstack-keystone/python-keystone-9.0.0-0.sdake.el7.centos.noarch.rpm \
+        python-keystoneclient \
+        httpd \
+        mod_wsgi \
+    && yum clean all
+
+RUN mkdir -p /var/www/cgi-bin/keystone \
+    && cp -a /usr/share/keystone/keystone.wsgi /var/www/cgi-bin/keystone/main \
+    && cp -a /usr/share/keystone/keystone.wsgi /var/www/cgi-bin/keystone/admin \
+    && sed -i -r 's,^(Listen 80),#\1,' /etc/httpd/conf/httpd.conf
+
+    {% elif base_distro in ['ubuntu'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        keystone \
+        apache2 \
+        libapache2-mod-wsgi \
+    && apt-get clean
+
+RUN mkdir -p /var/www/cgi-bin/keystone \
+    && cp -a /usr/share/keystone/wsgi.py /var/www/cgi-bin/keystone/main \
+    && cp -a /usr/share/keystone/wsgi.py /var/www/cgi-bin/keystone/admin \
+    && echo > /etc/apache2/ports.conf
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['fedora', 'centos', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        httpd \
+        mod_wsgi \
+    && yum clean all \
+    && sed -i -r 's,^(Listen 80),#\1,' /etc/httpd/conf/httpd.conf
+
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        apache2 \
+        libapache2-mod-wsgi \
+    && echo > /etc/apache2/ports.conf \
+    && apt-get clean
+
+    {% endif %}
+
+ADD keystone-archive /keystone-source
+RUN ln -s keystone-source/* keystone \
+    && useradd --user-group keystone \
+    && /var/lib/kolla/venv/bin/pip --no-cache-dir install --upgrade -c requirements/upper-constraints.txt /keystone \
+    && mkdir -p /etc/keystone /var/www/cgi-bin/keystone /var/log/apache2 /home/keystone \
+    && cp -r /keystone/etc/* /etc/keystone/ \
+    && cp /keystone/httpd/keystone.py /var/www/cgi-bin/keystone/admin \
+    && cp /keystone/httpd/keystone.py /var/www/cgi-bin/keystone/main \
+    && chown -R keystone: /etc/keystone /var/www/cgi-bin/keystone /var/log/apache2 /home/keystone
+
+{% endif %}
+
+RUN usermod -a -G kolla keystone \
+    && chown -R keystone: /var/www/cgi-bin/keystone \
+    && chmod 755 /var/www/cgi-bin/keystone/*
+
+COPY keystone_bootstrap.sh /usr/local/bin/kolla_keystone_bootstrap
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+RUN chmod 755 /usr/local/bin/kolla_extend_start /usr/local/bin/kolla_keystone_bootstrap
+
+{{ include_footer }}

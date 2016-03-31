@@ -1,0 +1,93 @@
+[DEFAULT]
+debug = {{ cinder_logging_debug }}
+
+log_dir = /var/log/kolla/cinder
+use_forwarded_for = true
+
+# Set use_stderr to False or the logs will also be sent to stderr
+# and collected by Docker
+use_stderr = False
+
+enable_v1_api=false
+volume_name_template = %s
+
+glance_api_servers = {{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ glance_api_port }}
+glance_api_version = 2
+
+os_region_name = {{ openstack_region_name }}
+
+{% if cinder_volume_driver == "lvm" %}
+default_volume_type = lvmdriver-1
+enabled_backends = lvmdriver-1
+{% elif cinder_volume_driver == "ceph" %}
+default_volume_type = rbd-1
+enabled_backends = rbd-1
+{% endif %}
+
+{% if service_name == "cinder-backup" and cinder_volume_driver == "ceph" %}
+backup_driver = cinder.backup.drivers.ceph
+backup_ceph_conf = /etc/ceph/ceph.conf
+backup_ceph_user = cinder-backup
+backup_ceph_chunk_size = 134217728
+backup_ceph_pool = {{ ceph_cinder_backup_pool_name }}
+backup_ceph_stripe_unit = 0
+backup_ceph_stripe_count = 0
+restore_discard_excess_bytes = true
+{% endif %}
+
+osapi_volume_listen = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
+osapi_volume_listen_port = {{ cinder_api_port }}
+
+api_paste_config = /etc/cinder/api-paste.ini
+nova_catalog_info = compute:nova:internalURL
+
+auth_strategy = keystone
+
+[database]
+connection = mysql+pymysql://{{ cinder_database_user }}:{{ cinder_database_password }}@{{ cinder_database_address }}/{{ cinder_database_name }}
+
+[keystone_authtoken]
+auth_uri = {{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_public_port }}
+auth_url = {{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_admin_port }}
+auth_type = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = {{ cinder_keystone_user }}
+password = {{ cinder_keystone_password }}
+
+memcache_security_strategy = ENCRYPT
+memcache_secret_key = {{ memcache_secret_key }}
+memcached_servers = {% for host in groups['memcached'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ memcached_port }}{% if not loop.last %},{% endif %}{% endfor %}
+
+
+[oslo_concurrency]
+lock_path = /var/lib/cinder/tmp
+
+[oslo_messaging_rabbit]
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_password }}
+rabbit_ha_queues = true
+rabbit_hosts = {% for host in groups['rabbitmq'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}{% if not loop.last %},{% endif %}{% endfor %}
+
+
+{% if cinder_volume_driver == "lvm" %}
+[lvmdriver-1]
+lvm_type = default
+volume_group = cinder-volumes
+volume_driver = cinder.volume.drivers.lvm.LVMVolumeDriver
+volume_backend_name = lvmdriver-1
+{% elif cinder_volume_driver == "ceph" %}
+[rbd-1]
+volume_driver = cinder.volume.drivers.rbd.RBDDriver
+rbd_pool = {{ ceph_cinder_pool_name }}
+rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_flatten_volume_from_snapshot = false
+rbd_max_clone_depth = 5
+rbd_store_chunk_size = 4
+rados_connect_timeout = -1
+rbd_user = cinder
+rbd_secret_uuid = {{ rbd_secret_uuid }}
+report_discard_supported = True
+{% endif %}
+

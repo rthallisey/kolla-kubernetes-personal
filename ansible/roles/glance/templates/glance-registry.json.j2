@@ -1,0 +1,11 @@
+{
+    "command": "glance-registry",
+    "config_files": [
+        {
+            "source": "{{ container_config_directory }}/glance-registry.conf",
+            "dest": "/etc/glance/glance-registry.conf",
+            "owner": "glance",
+            "perm": "0600"
+        }
+    ]
+}
