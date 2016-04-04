@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+spec:
+  ports:
+    - port: {{ nova_api_port }}
+  selector:
+    name: nova-controller
+metadata:
+   name: nova-api
+
+---
+apiVersion: v1
+kind: Service
+spec:
+  ports:
+    - port: 16509
+  selector:
+    name: nova-compute
+metadata:
+   name: nova-libvirt
+
+---
+apiVersion: v1
+kind: Service
+spec:
+  ports:
+    - port: {{ nova_api_ec2_port }}
+  selector:
+    name: nova-controller
+metadata:
+   name: nova-ec2-api
+
+---
+apiVersion: v1
+kind: Service
+spec:
+  ports:
+    - port: {{ nova_novncproxy_port }}
+  selector:
+    name: nova-controller
+metadata:
+   name: nova-novncproxy
+
+---
+apiVersion: v1
+kind: Service
+spec:
+  ports:
+    - port: {{ nova_metadata_port }}
+  selector:
+    name: nova-controller
+metadata:
+   name: nova-novncproxy
