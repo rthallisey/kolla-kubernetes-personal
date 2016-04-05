@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+   name: heat
+spec:
+  hostNetwork: True
+  containers:
+    - image: kollaglue/centos-binary-heat-api:2.0.0
+      name: heat-api
+      volumeMounts:
+        - mountPath: "/var/lib/kolla/config_files"
+          name: heat-config
+      env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+    - image: kollaglue/centos-binary-heat-engine:2.0.0
+      name: heat-engine
+      volumeMounts:
+        - mountPath: "/var/lib/kolla/config_files"
+          name: heat-config
+      env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+  volumes:
+    - name: heat-config
+      hostPath:
+        path: "/etc/kolla/heat"

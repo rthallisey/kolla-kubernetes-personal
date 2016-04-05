@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+   name: rabbitmq
+spec:
+  hostNetwork: True
+  containers:
+    - image: kollaglue/centos-binary-rabbitmq:2.0.0
+      name: rabbitmq
+      volumeMounts:
+        - mountPath: "/var/lib/kolla/config_files"
+          name: rabbitmq-config
+      env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+  volumes:
+    - name: rabbitmq-config
+      hostPath:
+        path: "/etc/kolla/rabbitmq"

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+   name: mariadb
+spec:
+  hostNetwork: True
+  containers:
+    - image: kollaglue/centos-binary-mariadb:2.0.0
+      name: mariadb
+      volumeMounts:
+        - mountPath: "/var/lib/kolla/config_files"
+          name: mariadb-config
+      env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+  volumes:
+    - name: mariadb-config
+      hostPath:
+        path: "/etc/kolla/mariadb"

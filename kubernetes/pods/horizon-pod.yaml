@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+   name: horizon
+spec:
+  hostNetwork: True
+  containers:
+    - image: kollaglue/centos-binary-horizon:2.0.0
+      name: horizon
+      volumeMounts:
+        - mountPath: "/var/lib/kolla/config_files"
+          name: horizon-config
+      env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+  volumes:
+    - name: horizon-config
+      hostPath:
+        path: "/etc/kolla/horizon"
